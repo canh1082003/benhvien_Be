@@ -70,12 +70,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'benhvien_django.wsgi.application'
 
 # Database
-# In production (Render), DATABASE_URL env var is auto-set by Render PostgreSQL addon
-# In local dev, falls back to the local PostgreSQL config
+# Supports 3 configurations in priority order:
+# 1. DATABASE_URL env var (single connection string)
+# 2. Individual HOST/NAME/USER/PASSWORD/PORT env vars (set manually on Render)
+# 3. Local dev fallback (localhost:3800)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+elif os.environ.get('HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('NAME', 'benhvien'),
+            'USER': os.environ.get('USER', 'postgres'),
+            'PASSWORD': os.environ.get('PASSWORD', 'conganh123'),
+            'HOST': os.environ.get('HOST', 'localhost'),
+            'PORT': os.environ.get('PORT', '3800'),
+        }
     }
 else:
     # Local development database
