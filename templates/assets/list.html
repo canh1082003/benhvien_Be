@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Quản lý Thiết bị Y tế – Danh sách{% endblock %}
+{% block topbar_title %}📋 Danh sách Thiết bị Y tế{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --border:#e6e8ef; --border2:#eaecf0;
+    --text:#101828; --muted:#667085; --muted2:#344054;
+    --bg:#f0f4f8; --card:#fff;
+    --blue:#2563eb; --green:#12b76a; --red:#f04438; --amber:#f79009;
+  }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .panel-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px; gap: 14px; }
+  .panel-title { font-size: 20px; font-weight: 900; }
+  .panel-sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .divider { height: 1px; background: var(--border2); }
+  .content-inner { padding: 14px 18px 18px; }
+
+  /* KPI */
+  .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  .kpi { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: #fff; cursor: pointer; transition: box-shadow .15s; }
+  .kpi:hover { box-shadow: 0 2px 8px rgba(16,24,40,.08); border-color: #cfd6e6; }
+  .kpi.active { border-color: var(--blue); background: #eff6ff; }
+  .kpi.warn { background: #fffaf0; border-color: #f5d6a6; }
+  .kpi.danger { background: #fff5f5; border-color: #f5b5b5; }
+  .kpi .k { font-size: 12px; color: var(--muted); }
+  .kpi .v { font-size: 22px; font-weight: 900; margin-top: 5px; }
+
+  /* Quick chips */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
+  .chip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: var(--muted2); cursor: pointer; text-decoration: none; transition: background .12s; }
+  .chip:hover { border-color: #cfd6e6; background: #f2f4f7; }
+  .chip.active { background: #dbeafe; border-color: #93c5fd; color: #1e3a8a; }
+  .chip.warn { background: #fffbeb; border-color: #fde68a; }
+  .chip.danger { background: #fff5f5; border-color: #fca5a5; }
+
+  /* Filters */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters input, .filters select { border: 1px solid #d0d5dd; border-radius: 10px; padding: 9px 12px; font-size: 13px; background: #fff; outline: none; }
+  .filters input:focus, .filters select:focus { border-color: #9db5ff; box-shadow: 0 0 0 3px rgba(37,99,235,.10); }
+  .filters input { flex: 1; min-width: 220px; }
+
+  /* Table */
+  .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 14px; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; border-bottom: 1px solid var(--border2); padding: 11px 10px; font-size: 12px; font-weight: 700; color: #344054; text-align: left; white-space: nowrap; }
+  tbody td { padding: 12px 10px; text-align: left; vertical-align: top; font-size: 13px; border-bottom: 1px solid var(--border2); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fafc; }
+  .muted { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  a.link { color: #1d4ed8; text-decoration: none; font-weight: 800; }
+  a.link:hover { text-decoration: underline; }
+  .actions-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-sm { border: 1px solid #d0d5dd; background: #fff; border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; color: var(--text); }
+  .btn-sm:hover { background: #f2f4f7; }
+  .btn-sm.danger { border-color: #fda29b; background: #fff5f5; color: var(--red); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .big { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h1 class="panel-title">Quản lý Thiết bị Y tế</h1>
+      <p class="panel-sub">Danh sách thiết bị theo vòng đời: nhận diện · kiểm định · phân bổ · bảo trì · vòng đời</p>
+    </div>
+    <div class="panel-actions">
+      <a href="{% url 'asset_add' %}" class="btn primary">➕ Thêm thiết bị</a>
+      <a href="/admin/assets_app/asset/" class="btn">⚙️ Admin</a>
+    </div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="content-inner">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <a href="?{% if q %}q={{ q }}&{% endif %}" class="kpi {% if not quick_filter and not status_filter %}active{% endif %}" style="text-decoration:none">
+        <div class="k">Tổng thiết bị</div>
+        <div class="v">{{ kpi_total }}</div>
+      </a>
+      <a href="?status=IN_SERVICE{% if q %}&q={{ q }}{% endif %}" class="kpi" style="text-decoration:none">
+        <div class="k">Đang sử dụng</div>
+        <div class="v">{{ kpi_in_use }}</div>
+      </a>
+      <a href="?status=STANDBY{% if q %}&q={{ q }}{% endif %}" class="kpi" style="text-decoration:none">
+        <div class="k">Dự phòng</div>
+        <div class="v">{{ kpi_standby }}</div>
+      </a>
+      <a href="?status=BREAKDOWN{% if q %}&q={{ q }}{% endif %}" class="kpi danger" style="text-decoration:none">
+        <div class="k">Hỏng</div>
+        <div class="v">{{ kpi_broken }}</div>
+      </a>
+      <a href="?qf=inspection_due_soon" class="kpi warn" style="text-decoration:none">
+        <div class="k">Sắp đến hạn KĐ</div>
+        <div class="v">{{ kpi_inspect_soon }}</div>
+      </a>
+      <a href="?qf=inspection_overdue" class="kpi danger" style="text-decoration:none">
+        <div class="k">Quá hạn KĐ</div>
+        <div class="v">{{ kpi_inspect_overdue }}</div>
+      </a>
+    </div>
+
+    <!-- Quick Chips -->
+    <div class="chips">
+      <a href="?qf=pm_due_soon" class="chip {% if quick_filter == 'pm_due_soon' %}active{% endif %}">🔧 PM sắp đến ({{ kpi_pm_soon }})</a>
+      <a href="?qf=pm_overdue" class="chip danger {% if quick_filter == 'pm_overdue' %}active{% endif %}">🔧 PM quá hạn ({{ kpi_pm_overdue }})</a>
+      <a href="?qf=inspection_due_soon" class="chip warn {% if quick_filter == 'inspection_due_soon' %}active{% endif %}">⏳ KĐ sắp đến hạn ({{ kpi_inspect_soon }})</a>
+      <a href="?qf=inspection_overdue" class="chip danger {% if quick_filter == 'inspection_overdue' %}active{% endif %}">⛔ KĐ quá hạn ({{ kpi_inspect_overdue }})</a>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="filters">
+      <input type="text" name="q" value="{{ q }}" placeholder="Mã thiết bị / Tên / Serial / IMEI...">
+      <select name="status">
+        <option value="">Tất cả trạng thái</option>
+        <option value="IN_SERVICE" {% if status_filter == 'IN_SERVICE' %}selected{% endif %}>Đang sử dụng</option>
+        <option value="STANDBY" {% if status_filter == 'STANDBY' %}selected{% endif %}>Dự phòng</option>
+        <option value="BREAKDOWN" {% if status_filter == 'BREAKDOWN' %}selected{% endif %}>Hỏng</option>
+        <option value="UNDER_MAINTENANCE" {% if status_filter == 'UNDER_MAINTENANCE' %}selected{% endif %}>Đang bảo trì</option>
+        <option value="OUT_OF_SERVICE" {% if status_filter == 'OUT_OF_SERVICE' %}selected{% endif %}>Ngừng hoạt động</option>
+      </select>
+      <select name="dept">
+        <option value="">Tất cả Khoa/Phòng</option>
+        {% for dept in departments %}
+        <option value="{{ dept.pk }}" {% if dept_filter == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn primary">🔍 Lọc</button>
+      <a href="{% url 'asset_list' %}" class="btn">✕ Xóa lọc</a>
+    </form>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:180px">Mã thiết bị</th>
+            <th style="min-width:230px">Tên thiết bị</th>
+            <th style="min-width:130px">Nhóm thiết bị</th>
+            <th style="min-width:150px">Khoa/Phòng</th>
+            <th style="min-width:160px">Vị trí</th>
+            <th style="min-width:130px">Trạng thái</th>
+            <th style="min-width:200px">Kiểm định</th>
+            <th style="min-width:200px">Bảo trì (PM)</th>
+            <th style="min-width:170px">Nhà sản xuất</th>
+            <th style="min-width:110px">Cập nhật</th>
+            <th style="min-width:160px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in assets %}
+          {% with insp=asset.inspection_status pm=asset.pm_status %}
+          <tr>
+            <td>
+              <div><a class="link" href="{% url 'asset_detail' pk=asset.pk %}">{{ asset.asset_code }}</a></div>
+              {% if asset.serial_no %}<div class="muted">S/N: {{ asset.serial_no }}</div>{% endif %}
+              {% if asset.imei %}<div class="muted">IMEI: {{ asset.imei }}</div>{% endif %}
+            </td>
+            <td>
+              <div style="font-weight:600">{{ asset.asset_name }}</div>
+              <div class="muted">{{ asset.get_asset_type_display }}</div>
+            </td>
+            <td>{{ asset.category.name|default:"—" }}</td>
+            <td>{{ asset.owner_dept.name|default:"—" }}</td>
+            <td style="font-size:12px;color:#344054">
+              {% if asset.building or asset.floor or asset.room %}
+                {{ asset.building }}{% if asset.floor %} · {{ asset.floor }}{% endif %}{% if asset.room %} · {{ asset.room }}{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="badge {{ asset.get_status_badge_class }}">
+                {{ asset.get_current_status_display }}
+              </span>
+            </td>
+            <td>
+              <span class="badge {{ insp.2 }}">{{ insp.1 }}</span>
+              {% if asset.inspection_expiry_date %}<div class="muted">Hết hạn: {{ asset.inspection_expiry_date }}</div>{% endif %}
+            </td>
+            <td>
+              <span class="badge {{ pm.2 }}">{{ pm.1 }}</span>
+              {% if asset.pm_next_due_date %}<div class="muted">Kế tiếp: {{ asset.pm_next_due_date }}</div>{% endif %}
+            </td>
+            <td>
+              <div style="font-size:13px">{{ asset.manufacturer.name|default:"—" }}</div>
+              {% if asset.warranty_end_at %}
+                <div class="muted">Bảo hành đến: {{ asset.warranty_end_at }}</div>
+              {% endif %}
+            </td>
+            <td style="white-space:nowrap;font-size:12px;color:#667085">{{ asset.updated_at|date:"d/m/Y" }}</td>
+            <td>
+              <div class="actions-row">
+                <a href="{% url 'asset_detail' pk=asset.pk %}" class="btn-sm">👁 Xem</a>
+                <a href="{% url 'asset_edit' pk=asset.pk %}" class="btn-sm">✏️ Sửa</a>
+                <a href="{% url 'asset_delete' pk=asset.pk %}" class="btn-sm danger">Disable</a>
+              </div>
+            </td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr>
+            <td colspan="11">
+              <div class="empty-state">
+                <div class="big">🏥</div>
+                <p>Chưa có thiết bị nào. <a href="{% url 'asset_add' %}" class="link">Thêm thiết bị đầu tiên →</a></p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer info -->
+    <div style="display:flex;justify-content:space-between;margin-top:12px;color:var(--muted);font-size:13px">
+      <div>Hiển thị {{ assets|length }} thiết bị / Tổng {{ kpi_total }}</div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

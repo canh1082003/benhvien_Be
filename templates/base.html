@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{% block title %}Quản lý Thiết bị Y tế{% endblock %}</title>
+    <style>
+      :root {
+        --bg: #f0f4f8;
+        --card: #fff;
+        --sidebar: #0f172a;
+        --sidebar-text: #94a3b8;
+        --sidebar-hover: #1e293b;
+        --sidebar-active: #2563eb;
+        --text: #101828;
+        --muted: #667085;
+        --border: #e6e8ef;
+        --border2: #eaecf0;
+        --blue: #2563eb;
+        --red: #f04438;
+        --green: #12b76a;
+        --amber: #f79009;
+        --gray: #98a2b3;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        min-height: 100vh;
+      }
+      /* Sidebar */
+      .sidebar {
+        width: 230px;
+        background: var(--sidebar);
+        color: var(--sidebar-text);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        overflow-y: auto;
+        z-index: 100;
+      }
+      .sidebar-logo {
+        padding: 20px 16px 16px;
+        border-bottom: 1px solid #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .sidebar-logo .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--blue);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .sidebar-logo .logo-text {
+        font-size: 14px;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.3;
+      }
+      .sidebar-logo .logo-sub {
+        font-size: 11px;
+        color: var(--sidebar-text);
+      }
+      .sidebar-nav {
+        padding: 12px 8px;
+        flex: 1;
+      }
+      .nav-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #475569;
+        padding: 10px 8px 4px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 10px;
+        border-radius: 10px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .nav-item:hover {
+        background: var(--sidebar-hover);
+        color: #e2e8f0;
+      }
+      .nav-item.active {
+        background: var(--sidebar-active);
+        color: #fff;
+      }
+      .nav-item .icon {
+        width: 18px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .sidebar-footer {
+        padding: 12px 16px;
+        border-top: 1px solid #1e293b;
+        font-size: 12px;
+        color: #475569;
+      }
+      /* Main content */
+      .main {
+        margin-left: 230px;
+        flex: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .topbar {
+        background: var(--card);
+        border-bottom: 1px solid var(--border2);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .topbar-title {
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .topbar-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .content {
+        padding: 20px 24px;
+        flex: 1;
+      }
+      /* Buttons */
+      .btn {
+        border: 1px solid #d0d5dd;
+        background: var(--card);
+        border-radius: 10px;
+        padding: 9px 14px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: var(--text);
+        transition: background 0.15s;
+      }
+      .btn:hover {
+        background: #f2f4f7;
+      }
+      .btn.primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      .btn.primary:hover {
+        filter: brightness(0.96);
+      }
+      .btn.danger {
+        border-color: #fda29b;
+        background: #fff5f5;
+        color: var(--red);
+      }
+      .btn.sm {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 8px;
+      }
+      /* Alert messages */
+      .messages {
+        margin: 0 0 12px;
+      }
+      .alert {
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .alert-success {
+        background: #ecfdf3;
+        border-color: #abefc6;
+        color: #054f31;
+      }
+      .alert-error {
+        background: #fff5f5;
+        border-color: #fda29b;
+        color: #7f1d1d;
+      }
+      /* Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid;
+        white-space: nowrap;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .b-green {
+        background: #ecfdf3;
+        border-color: #abefc6;
+        color: #054f31;
+      }
+      .b-blue {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e3a8a;
+      }
+      .b-red {
+        background: #fff5f5;
+        border-color: #fda29b;
+        color: #7f1d1d;
+      }
+      .b-gray {
+        background: #f2f4f7;
+        border-color: #d0d5dd;
+        color: #344054;
+      }
+      .b-amber {
+        background: #fffaf0;
+        border-color: #f5d6a6;
+        color: #7c2d12;
+      }
+    </style>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🏥</div>
+        <div>
+          <div class="logo-text">Bệnh Viện</div>
+          <div class="logo-sub">Asset Management</div>
+        </div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-label">Thiết bị y tế</div>
+        <a
+          href="{% url 'asset_list' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'asset_list' %}active{% endif %}"
+        >
+          <span class="icon">📋</span> Danh sách thiết bị
+        </a>
+        <a
+          href="{% url 'asset_add' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'asset_add' %}active{% endif %}"
+        >
+          <span class="icon">➕</span> Nhập mới thiết bị
+        </a>
+        <div class="nav-label">Bảo trì & Kiểm định</div>
+        <a href="/admin/maintenance_app/workorder/" class="nav-item">
+          <span class="icon">🔧</span> Work Orders
+        </a>
+        <a href="/admin/maintenance_app/incident/" class="nav-item">
+          <span class="icon">🛑</span> Sự cố / Báo hỏng
+        </a>
+        <a href="/admin/maintenance_app/compliancerecord/" class="nav-item">
+          <span class="icon">✅</span> Kiểm định / Hiệu chuẩn
+        </a>
+        <div class="nav-label">Kho & Vật tư</div>
+        <a href="/admin/inventory_app/part/" class="nav-item">
+          <span class="icon">🔩</span> Linh kiện / Vật tư
+        </a>
+        <a href="/admin/inventory_app/inventory/" class="nav-item">
+          <span class="icon">📦</span> Tồn kho
+        </a>
+        <div class="nav-label">Danh mục</div>
+        <a href="/admin/assets_app/assetcategory/" class="nav-item">
+          <span class="icon">🗂️</span> Nhóm thiết bị
+        </a>
+        <a href="/admin/locations_app/department/" class="nav-item">
+          <span class="icon">🏢</span> Khoa/Phòng
+        </a>
+        <a href="/admin/assets_app/manufacturer/" class="nav-item">
+          <span class="icon">🏭</span> Nhà sản xuất
+        </a>
+        <a href="/admin/assets_app/vendor/" class="nav-item">
+          <span class="icon">🤝</span> Nhà cung cấp
+        </a>
+        <div class="nav-label">Hệ thống</div>
+        <a href="/login/" class="nav-item">
+          <span class="icon">⚙️</span> Quản trị (Admin)
+        </a>
+      </div>
+      <div class="sidebar-footer">Phiên bản 1.0 · 2026</div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">
+          {% block topbar_title %}Hệ thống Quản lý Thiết bị Y tế{% endblock %}
+        </div>
+        <div class="topbar-right">
+          <a href="{% url 'asset_add' %}" class="btn primary"
+            >➕ Thêm thiết bị</a
+          >
+          <a href="/admin/" class="btn">⚙️ Admin</a>
+        </div>
+      </div>
+
+      <div class="content">
+        {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %} {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

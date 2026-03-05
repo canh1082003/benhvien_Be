@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Xác nhận vô hiệu hóa – {{ asset.asset_code }}{% endblock %}
+{% block topbar_title %}⚠ Xác nhận vô hiệu hóa thiết bị{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+  <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+  <h2 style="font-size:18px;margin-bottom:8px">Vô hiệu hóa thiết bị?</h2>
+  <p style="color:var(--muted);margin-bottom:20px">
+    Thiết bị <strong>{{ asset.asset_code }} – {{ asset.asset_name }}</strong> sẽ bị đánh dấu là đã xóa và không hiện trong danh sách.
+  </p>
+  <form method="post" style="display:flex;gap:10px;justify-content:center">
+    {% csrf_token %}
+    <button type="submit" class="btn danger">✓ Xác nhận vô hiệu hóa</button>
+    <a href="{% url 'asset_detail' pk=asset.pk %}" class="btn">✕ Hủy</a>
+  </form>
+</div>
+{% endblock %}

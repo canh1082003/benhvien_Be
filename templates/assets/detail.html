@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}{{ asset.asset_code }} – Chi tiết thiết bị{% endblock %}
+{% block topbar_title %}👁 Chi tiết Thiết bị: {{ asset.asset_code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Asset detail styles */
+  .topbar-asset{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .asset-avatar{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#e0f2fe,#e9d5ff);display:grid;place-items:center;font-size:22px;flex-shrink:0;border:1px solid var(--border)}
+  .asset-title{font-size:16px;font-weight:900;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .asset-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;font-size:12px;color:var(--muted)}
+  .asset-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1.3fr .7fr;gap:14px;margin-bottom:14px}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 12px rgba(15,23,42,.05);overflow:hidden;margin-bottom:14px}
+  .card-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-title{font-weight:900;font-size:13px;display:flex;gap:8px;align-items:center}
+  .card-body{padding:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fbfdff}
+  .kpi .kl{font-size:11px;color:var(--muted)}
+  .kpi .kv{font-size:18px;font-weight:900;margin-top:4px}
+  .kpi .kh{font-size:11px;color:var(--muted);margin-top:3px}
+  .dl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:640px){.dl{grid-template-columns:1fr}}
+  .field{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff}
+  .field .k{font-size:11px;color:var(--muted)}
+  .field .v{margin-top:3px;font-weight:800;font-size:13px;word-break:break-word}
+  /* Tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:#fff}
+  .tab{border:1px solid var(--border);background:#f8fafc;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer;user-select:none;color:var(--text)}
+  .tab.active{background:#dbeafe;border-color:#93c5fd;color:#1e3a8a}
+  .pane{display:none;padding:14px}
+  .pane.active{display:block}
+  /* Table */
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--border2);font-size:13px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-size:12px;color:#334155;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  a.link{color:var(--blue);text-decoration:none;font-weight:800}
+  a.link:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:12px}
+  /* Timeline */
+  .timeline{position:relative;padding-left:20px;display:flex;flex-direction:column;gap:12px}
+  .timeline::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--border)}
+  .evt{position:relative;border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px}
+  .evt::before{content:"";position:absolute;left:-20px;top:14px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #94a3b8}
+  .evt-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .evt-t{font-weight:800}
+  .evt-d{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.5}
+  .empty-pane{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty-pane .big{font-size:36px;margin-bottom:8px}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Top bar with asset info & quick actions -->
+<div class="topbar-asset">
+  <div style="display:flex;gap:14px;align-items:center;min-width:0">
+    <div class="asset-avatar">🏥</div>
+    <div>
+      <div class="asset-title">
+        {{ asset.asset_name }}
+        <span class="badge {{ asset.get_status_badge_class }}">{{ asset.get_current_status_display }}</span>
+        {% with insp=asset.inspection_status %}
+          {% if insp.0 != 'none' %}<span class="badge {{ insp.2 }}" style="font-size:11px">KĐ: {{ insp.1 }}</span>{% endif %}
+        {% endwith %}
+        {% with pm=asset.pm_status %}
+          {% if pm.0 != 'none' %}<span class="badge {{ pm.2 }}" style="font-size:11px">PM: {{ pm.1 }}</span>{% endif %}
+        {% endwith %}
+      </div>
+      <div class="asset-meta">
+        <span>🧾 <b>{{ asset.asset_code }}</b></span>
+        {% if asset.serial_no %}<span>S/N: <b>{{ asset.serial_no }}</b></span>{% endif %}
+        {% if asset.owner_dept %}<span>📍 {{ asset.owner_dept.name }}</span>{% endif %}
+        {% if asset.building or asset.room %}<span>🏢 {{ asset.building }}{% if asset.floor %}/{{ asset.floor }}{% endif %}{% if asset.room %}/{{ asset.room }}{% endif %}</span>{% endif %}
+        {% if asset.custodian_user %}<span>👤 {{ asset.custodian_user.full_name|default:asset.custodian_user.username }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="asset-actions">
+    <a href="{% url 'asset_edit' pk=asset.pk %}" class="btn primary">✏️ Chỉnh sửa</a>
+    <a href="/admin/maintenance_app/workorder/add/?asset={{ asset.pk }}" class="btn">➕ Tạo WO</a>
+    <a href="/admin/maintenance_app/incident/add/?asset={{ asset.pk }}" class="btn">🛑 Báo hỏng</a>
+    <a href="{% url 'asset_list' %}" class="btn">← Danh sách</a>
+  </div>
+</div>
+
+<div class="grid2">
+
+  <!-- LEFT: Overview + KPIs -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📌 Tổng quan thiết bị (Asset 360)</div>
+      </div>
+      <div class="card-body">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kl">Sự cố (12 tháng)</div>
+            <div class="kv">{{ breakdowns_12m }}</div>
+            <div class="kh">Total incidents</div>
+          </div>
+          <div class="kpi">
+            <div class="kl">PM gần nhất</div>
+            <div class="kv" style="font-size:13px">{{ asset.pm_last_date|default:"—" }}</div>
+            <div class="kh">Next: {{ asset.pm_next_due_date|default:"—" }}</div>
+          </div>
+          <div class="kpi">
+            <div class="kl">Kiểm định gần nhất</div>
+            <div class="kv" style="font-size:13px">{{ asset.inspection_last_date|default:"—" }}</div>
+            <div class="kh">Hạn: {{ asset.inspection_expiry_date|default:"—" }}</div>
+          </div>
+          <div class="kpi">
+            <div class="kl">EOL / Vòng đời</div>
+            <div class="kv" style="font-size:13px">{{ asset.useful_life_years }} năm</div>
+            <div class="kh">Từ: {{ asset.commissioned_at|default:"—" }}</div>
+          </div>
+        </div>
+
+        <div class="dl">
+          <div class="field"><div class="k">Nhà sản xuất / Model</div><div class="v">{{ asset.manufacturer.name|default:"—" }} / {{ asset.model_name_manual|default:asset.model.model_name|default:"—" }}</div></div>
+          <div class="field"><div class="k">Serial Number</div><div class="v" style="font-family:monospace">{{ asset.serial_no|default:"—" }}</div></div>
+          <div class="field"><div class="k">Nhóm thiết bị</div><div class="v">{{ asset.category.name|default:"—" }}</div></div>
+          <div class="field"><div class="k">Risk Class</div><div class="v">{{ asset.risk_class|default:"—" }}</div></div>
+          <div class="field"><div class="k">Khoa/Phòng sở hữu</div><div class="v">{{ asset.owner_dept.name|default:"—" }}</div></div>
+          <div class="field"><div class="k">Nhà cung cấp</div><div class="v">{{ asset.vendor.name|default:"—" }}</div></div>
+          <div class="field"><div class="k">Bảo hành</div><div class="v">{% if asset.warranty_end_at %}đến {{ asset.warranty_end_at }}{% else %}—{% endif %}</div></div>
+          <div class="field"><div class="k">Đưa vào sử dụng</div><div class="v">{{ asset.commissioned_at|default:"—" }}</div></div>
+        </div>
+
+        {% if asset.notes %}
+        <div style="margin-top:12px;border:1px dashed #cbd5e1;background:#f8fafc;border-radius:10px;padding:10px;font-size:13px;color:#334155">
+          📝 {{ asset.notes }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Quick Info -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚡ Thông tin nhanh</div>
+      </div>
+      <div class="card-body">
+        <div class="dl">
+          <div class="field"><div class="k">Trạng thái</div><div class="v"><span class="badge {{ asset.get_status_badge_class }}">{{ asset.get_current_status_display }}</span></div></div>
+          <div class="field"><div class="k">Loại thiết bị</div><div class="v">{{ asset.get_asset_type_display }}</div></div>
+          <div class="field"><div class="k">Barcode / QR</div><div class="v" style="font-family:monospace">{{ asset.barcode|default:"—" }}</div></div>
+          <div class="field"><div class="k">IMEI</div><div class="v" style="font-family:monospace">{{ asset.imei|default:"—" }}</div></div>
+        </div>
+
+        {% with insp=asset.inspection_status pm=asset.pm_status %}
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:var(--muted)">Kiểm định</span>
+            <span class="badge {{ insp.2 }}">{{ insp.1 }}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:var(--muted)">PM</span>
+            <span class="badge {{ pm.2 }}">{{ pm.1 }}</span>
+          </div>
+          {% with eol=asset.eol_status %}
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:var(--muted)">EOL</span>
+            <span class="badge {{ eol.2 }}">{{ eol.1 }}</span>
+          </div>
+          {% endwith %}
+        </div>
+        {% endwith %}
+
+        <div style="margin-top:14px">
+          <a href="{% url 'asset_edit' pk=asset.pk %}" class="btn primary" style="width:100%;justify-content:center">✏️ Chỉnh sửa thiết bị</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs Section -->
+<div class="card">
+  <div class="tabs" id="tabsContainer">
+    <div class="tab active" data-tab="tab-overview">Overview</div>
+    <div class="tab" data-tab="tab-timeline">Timeline</div>
+    <div class="tab" data-tab="tab-pm">Preventive Maintenance</div>
+    <div class="tab" data-tab="tab-repair">Sự cố & Sửa chữa</div>
+    <div class="tab" data-tab="tab-calibration">Kiểm định / Hiệu chuẩn</div>
+    <div class="tab" data-tab="tab-handover">Bàn giao</div>
+    <div class="tab" data-tab="tab-docs">Tài liệu</div>
+  </div>
+
+  <!-- Tab: Overview -->
+  <div class="pane active" id="tab-overview">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div>
+        <h3 style="font-size:13px;font-weight:900;margin:0 0 10px">🔍 Compliance Summary</h3>
+        <table>
+          <thead><tr><th>Hạng mục</th><th>Trạng thái</th><th>Ngày tiếp theo</th></tr></thead>
+          <tbody>
+            {% with insp=asset.inspection_status pm=asset.pm_status %}
+            <tr>
+              <td>Kiểm định</td>
+              <td><span class="badge {{ insp.2 }}">{{ insp.1 }}</span></td>
+              <td class="muted">{{ asset.inspection_expiry_date|default:"—" }}</td>
+            </tr>
+            <tr>
+              <td>Bảo trì định kỳ (PM)</td>
+              <td><span class="badge {{ pm.2 }}">{{ pm.1 }}</span></td>
+              <td class="muted">{{ asset.pm_next_due_date|default:"—" }}</td>
+            </tr>
+            {% endwith %}
+            <tr>
+              <td>Bảo hành</td>
+              <td>{% if asset.warranty_end_at and asset.warranty_end_at >= today %}<span class="badge b-green">Còn hạn</span>{% elif asset.warranty_end_at %}<span class="badge b-red">Hết hạn</span>{% else %}<span class="badge b-gray">—</span>{% endif %}</td>
+              <td class="muted">{{ asset.warranty_end_at|default:"—" }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3 style="font-size:13px;font-weight:900;margin:0 0 10px">📋 Thông tin kỹ thuật</h3>
+        <div class="dl">
+          <div class="field"><div class="k">Tòa nhà</div><div class="v">{{ asset.building|default:"—" }}</div></div>
+          <div class="field"><div class="k">Tầng</div><div class="v">{{ asset.floor|default:"—" }}</div></div>
+          <div class="field"><div class="k">Phòng</div><div class="v">{{ asset.room|default:"—" }}</div></div>
+          <div class="field"><div class="k">Giường</div><div class="v">{{ asset.bed|default:"—" }}</div></div>
+          <div class="field"><div class="k">Mã hợp đồng</div><div class="v">{{ asset.service_contract_id|default:"—" }}</div></div>
+          <div class="field"><div class="k">Hết hạn HĐ</div><div class="v">{{ asset.contract_end|default:"—" }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Timeline -->
+  <div class="pane" id="tab-timeline">
+    {% if events %}
+    <div class="timeline">
+      {% for event in events %}
+      <div class="evt">
+        <div class="evt-head">
+          <div class="evt-t">{{ event.summary }}</div>
+          <span class="badge b-gray">{{ event.get_event_type_display }}</span>
+          <span class="muted">{{ event.event_time|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% if event.actor_user %}<div class="evt-d">Bởi: {{ event.actor_user.full_name|default:event.actor_user.username }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-pane"><div class="big">📭</div><p>Chưa có sự kiện nào được ghi lại.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: PM -->
+  <div class="pane" id="tab-pm">
+    {% if pm_records %}
+    <table>
+      <thead><tr><th>Mã WO</th><th>Ngày</th><th>Loại</th><th>Kỹ thuật viên</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+        {% for wo in pm_records %}
+        <tr>
+          <td><a class="link" href="/admin/maintenance_app/workorder/{{ wo.pk }}/change/">{{ wo.wo_code }}</a></td>
+          <td class="muted">{{ wo.requested_at|date:"d/m/Y" }}</td>
+          <td>{{ wo.get_wo_type_display }}</td>
+          <td>{{ wo.assigned_to.full_name|default:wo.assigned_to.username|default:"—" }}</td>
+          <td><span class="badge b-green">{{ wo.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-pane"><div class="big">🔧</div><p>Chưa có Work Order PM nào. <a href="/admin/maintenance_app/workorder/add/" class="link">Tạo WO PM →</a></p></div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Repair -->
+  <div class="pane" id="tab-repair">
+    {% if incidents %}
+    <table>
+      <thead><tr><th>Mã sự cố</th><th>Ngày báo</th><th>Triệu chứng</th><th>Mức độ</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+        {% for inc in incidents %}
+        <tr>
+          <td><a class="link" href="/admin/maintenance_app/incident/{{ inc.pk }}/change/">{{ inc.incident_code }}</a></td>
+          <td class="muted">{{ inc.reported_at|date:"d/m/Y" }}</td>
+          <td>{{ inc.symptom }}</td>
+          <td>{{ inc.get_priority_display }}</td>
+          <td><span class="badge b-green">{{ inc.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-pane"><div class="big">✅</div><p>Không có sự cố nào được báo cáo.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Calibration -->
+  <div class="pane" id="tab-calibration">
+    {% if calibration_records %}
+    <table>
+      <thead><tr><th>Mã hồ sơ</th><th>Loại</th><th>Thực hiện bởi</th><th>Ngày</th><th>Hạn kế tiếp</th><th>Kết quả</th></tr></thead>
+      <tbody>
+        {% for rec in calibration_records %}
+        <tr>
+          <td><a class="link" href="/admin/maintenance_app/compliancerecord/{{ rec.pk }}/change/">{{ rec.record_code }}</a></td>
+          <td>{{ rec.get_type_display }}</td>
+          <td>{{ rec.vendor.name|default:rec.get_performed_by_type_display }}</td>
+          <td class="muted">{{ rec.performed_at|date:"d/m/Y" }}</td>
+          <td class="muted">{{ rec.next_due_at|default:"—" }}</td>
+          <td><span class="badge {% if rec.result == 'PASS' %}b-green{% else %}b-red{% endif %}">{{ rec.get_result_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-pane"><div class="big">📋</div><p>Chưa có hồ sơ kiểm định/hiệu chuẩn. <a href="/admin/maintenance_app/compliancerecord/add/" class="link">Thêm hồ sơ →</a></p></div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Handover -->
+  <div class="pane" id="tab-handover">
+    {% if handovers %}
+    <table>
+      <thead><tr><th>Loại bàn giao</th><th>Từ khoa</th><th>Đến khoa</th><th>Ngày</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+        {% for h in handovers %}
+        <tr>
+          <td>{{ h.get_handover_type_display }}</td>
+          <td class="muted">{{ h.from_dept.name|default:"—" }}</td>
+          <td class="muted">{{ h.to_dept.name|default:"—" }}</td>
+          <td class="muted">{{ h.handover_at|date:"d/m/Y" }}</td>
+          <td><span class="badge b-green">{{ h.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-pane"><div class="big">🤝</div><p>Chưa có lịch sử bàn giao.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Documents -->
+  <div class="pane" id="tab-docs">
+    <div class="empty-pane"><div class="big">📎</div><p>Quản lý tài liệu qua <a href="/admin/documents_app/documentgroup/" class="link">Django Admin →</a></p></div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Tabs
+  const tabs = document.querySelectorAll('.tab');
+  const panes = document.querySelectorAll('.pane');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panes.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+{% endblock %}
