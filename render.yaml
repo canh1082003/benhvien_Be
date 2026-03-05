@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: benhvien-django-api
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn benhvien_django.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      # DATABASE_URL is automatically added when you create a PostgreSQL database on Render
+      # ALLOWED_HOSTS and CORS_ALLOWED_ORIGINS must be set manually after deploy
